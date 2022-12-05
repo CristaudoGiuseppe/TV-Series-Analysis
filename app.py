@@ -37,8 +37,9 @@ def analyze_tv_series(search):
     
     st.subheader(f"{df['Name'][0]} overview")
     st.dataframe(df_id)
+    # show more information con tutti gli episodi
     
-    df_avg_vote, df_vote_count, df_avg_chart, df_total_time = tv_series.get_series_data(df['ID'][0])
+    df_avg_vote, df_vote_count, df_avg_chart, df_total_time, df_prediction = tv_series.get_series_data(df['ID'][0])
     c1, c2 = st.columns(2)
     with c1:
         st.subheader('Avarage Vote Heatmap')
@@ -67,7 +68,18 @@ def analyze_tv_series(search):
         y = "time"
     )
     st.altair_chart(time_chart, use_container_width=True)
-    st.caption(f"Total time to watch: {df_total_time['time'][sel_range[1]] - df_total_time['time'][sel_range[0]]} minutes")
+    st.caption(f"Total time to watch: {df_total_time['time'][sel_range[1] - 1] - df_total_time['time'][sel_range[0]]} minutes")
+    
+    all_prediction = df_prediction.Type.unique()
+    predictions = st.multiselect("Choose prediction to visualize", all_prediction, all_prediction[:3])
+    
+    # space(1)
+    df_prediction = df_prediction[df_prediction.Type.isin(predictions)]
+    prediction_chart = utils.get_chart_2(df_prediction)
+    st.altair_chart(prediction_chart, use_container_width=True)
+
+   
+
     
     
 
@@ -100,4 +112,5 @@ elif st.session_state.analyze:
 # refactoring
 # spiegare codice
 # spiegare nell'app
-# git hub
+# fare bene grafico heatmap
+# sistemare errori nn tutti gli episodi

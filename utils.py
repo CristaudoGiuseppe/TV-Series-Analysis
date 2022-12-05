@@ -57,3 +57,43 @@ def window_input_output(input_length: int, output_length: int, data: pd.DataFram
     df = df.dropna(axis=0)
     
     return df
+
+def get_chart_2(data):
+    hover = alt.selection_single(
+        fields=["episode"],
+        nearest=True,
+        on="mouseover",
+        empty="none",
+    )
+
+    lines = (
+        alt.Chart(data, title="Predict Next Episode Vote Based On previous Votes")
+        .mark_line()
+        .encode(
+            x="episode",
+            y="Vote",
+            color="Type",
+            strokeDash="Type",
+        )
+    )
+
+    # Draw points on the line, and highlight based on selection
+    points = lines.transform_filter(hover).mark_circle(size=60)
+
+    # Draw a rule at the location of the selection
+    tooltips = (
+        alt.Chart(data)
+        .mark_rule()
+        .encode(
+            x="episode",
+            y="Vote",
+            opacity=alt.condition(hover, alt.value(0.3), alt.value(0)),
+            tooltip=[
+                alt.Tooltip("episode", title="Episode Number"),
+                alt.Tooltip("Vote", title="Vote"),
+            ],
+        )
+        .add_selection(hover)
+    )
+
+    return (lines + points + tooltips).interactive()

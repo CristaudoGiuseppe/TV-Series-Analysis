@@ -161,11 +161,20 @@ def get_series_data(tv_show_id, api_key = API_KEY):
         plt.text(x=index, y=value + 0.02, s=str(value), ha='center')
     
     plt.tight_layout()
-    print(test)
+    test['episodes'] = range(0, len(test))
+    #print(test)
+    df_prediction = pd.DataFrame(columns=['Type', 'Vote', 'episode'])
+    for index, row in test.iterrows():
+        df_prediction.loc[len(df_prediction.index)] = ['Vote', row['Vote'], index]
+        df_prediction.loc[len(df_prediction.index)] = ['dt_pred', row['dt_pred'], index]
+        df_prediction.loc[len(df_prediction.index)] = ['gbr_pred', row['gbr_pred'], index]
+    for index, row in train.iterrows():
+        df_prediction.loc[len(df_prediction.index)] = ['Vote', row['Vote'], index]
+    #print(df_prediction)    
     
     df_heatmap_vote = get_heatmap_avg_vote(seasons)
     df_heatmap_vote_count = get_heatmap_vote_count(seasons)
-    return df_heatmap_vote, df_heatmap_vote_count, df_avg_chart, df_total_time
+    return df_heatmap_vote, df_heatmap_vote_count, df_avg_chart, df_total_time, df_prediction
 
 def get_season_overview(tv_show_id, season_number, api_key = API_KEY):
     r = s.get(f'https://api.themoviedb.org/3/tv/{tv_show_id}/season/{season_number}?api_key={api_key}')
