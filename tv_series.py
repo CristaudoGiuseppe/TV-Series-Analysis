@@ -69,7 +69,8 @@ def get_tv_series_overview(tv_series_id, api_key = API_KEY):
     df = pd.DataFrame(columns=['ID', 'Name', 'Air Date', 'Season Number', 'Poster', 'Episode Count'])
     
     for season in r['seasons']:
-        df.loc[len(df.index)] = [season['id'], season['name'], season['air_date'], season['season_number'], f"https://image.tmdb.org/t/p/w440_and_h660_face/{season['poster_path']}" , season['episode_count']]
+        if 'specials'.upper() not in season['name'].upper(): # skip special seasons
+            df.loc[len(df.index)] = [season['id'], season['name'], season['air_date'], season['season_number'], f"https://image.tmdb.org/t/p/w440_and_h660_face/{season['poster_path']}" , season['episode_count']]
     
     return minor_information_dict, df
 
@@ -85,6 +86,19 @@ def get_tv_series_watch_providers(tv_series_id, api_key = API_KEY):
     
     return df
 
+# Get an overview of a specific season of a tv series, including Name, Air Date, Vote AVG. and Vote Count for a given tv_series_id and season_number
+def get_season_overview(tv_series_id, season_number, api_key = API_KEY):
+    r = json.loads(s.get(f'https://api.themoviedb.org/3/tv/{tv_series_id}/season/{season_number}?api_key={api_key}').text)
+    
+    # Create a DataFrame for the season overview
+    df = pd.DataFrame(columns=['ID', 'Name', 'Air Date', 'Vote AVG.', 'Vote Count'])
+    
+    for episode in r['episodes']:
+        df.loc[len(df.index)] = [episode['id'], episode['name'], episode['air_date'], episode['vote_average'], episode['vote_count']]
+    
+    return df
+
+# Return a DataFrame containing for each episode of each season the avarage vote
 def get_heatmap_avg_vote(seasons):
     df = pd.DataFrame()
     df.index.name = 'Episode'
@@ -93,8 +107,9 @@ def get_heatmap_avg_vote(seasons):
         df[f'Season {i}'] = s['Vote AVG.']
         i += 1
     
-    return(df)
+    return df
 
+# Return a DataFrame containing for each episode of each season the vote count
 def get_heatmap_vote_count(seasons):
     df = pd.DataFrame()
     df.index.name = 'Episode'
@@ -103,32 +118,33 @@ def get_heatmap_vote_count(seasons):
         df[f'Season {i}'] = s['Vote Count']
         i += 1
     
-    return(df)
+    return df
     
-
-def get_series_data(tv_show_id, api_key = API_KEY):
-    seasons = []
-    episodes_total_time = []
-    votes = []
-    episode_rt = get_episode_runtime(tv_show_id)
+# Get all the data needed to display in the streamlit app
+def get_series_data(tv_series_id, api_key = API_KEY):
+    seasons = [] # an array containing the information about each season
+    episodes_total_time = [] # every cell contain the total time -> e.g. 0 -> 22 min, 1 -> 44 min, 2 -> 66 min
+    votes = [] # need a time series for data regression
+    
+    episode_rt = get_episode_runtime(tv_series_id)
     episodes_total_time.append(episode_rt)
     
-    r = s.get(f'https://api.themoviedb.org/3/tv/{tv_show_id}?api_key={api_key}')
-    r_json = json.loads(r.text)    
-    
+    r = json.loads(s.get(f'https://api.themoviedb.org/3/tv/{tv_series_id}?api_key={api_key}').text)    
+    # Create a DataFrame which contains for each row the season number, the episode number, the avarage vote and the vote count
     df_avg_chart = pd.DataFrame(columns=['season', 'episode', 'avg', 'count'])
     
-    #df_total_time = pd.DataFrame(columns=['Total Time'])
-    #df_total_time.index.name = 'Episode'
-    #df_total_time['Total Time'][0] = episode_rt
-    
-    for season in r_json['seasons']:
-        if season['name'] == 'Specials':
+    for season in r['seasons']:
+        if 'specials'.upper() in season['name'].upper():
             continue
-        temp = get_season_overview(tv_show_id, season['season_number'])
+        
+        # For every season get a Dataframe which contains the information about each episode
+        temp = get_season_overview(tv_series_id, season['season_number'])
         
         for index, row in temp.iterrows():
+            # To display the chart with every season I need a DataFrame containing a column with the season information
+            
             df_avg_chart.loc[len(df_avg_chart.index)] = [season['name'], index + 1, row['Vote AVG.'], row['Vote Count']]
+            
             episodes_total_time.append(episodes_total_time[-1] + episode_rt)
             votes.append(row['Vote AVG.'])
         seasons.append(temp)
@@ -136,6 +152,10 @@ def get_series_data(tv_show_id, api_key = API_KEY):
     df_total_time = pd.DataFrame({'time': episodes_total_time, 'episodes':range(0, len(episodes_total_time))})
     df_total_time.index.name = 'Episode'
     
+    df_heatmap_vote = get_heatmap_avg_vote(seasons)
+    print(df_heatmap_vote)
+    
+    """
     df_total_vote = pd.DataFrame({'Vote': votes})
     df_total_vote.index.name = 'Episode'
     df_total_vote_copy = df_total_vote.copy()
@@ -195,20 +215,15 @@ def get_series_data(tv_show_id, api_key = API_KEY):
     df_heatmap_vote = get_heatmap_avg_vote(seasons)
     df_heatmap_vote_count = get_heatmap_vote_count(seasons)
     return df_heatmap_vote, df_heatmap_vote_count, df_avg_chart, df_total_time, df_prediction
+    """
 
-def get_season_overview(tv_show_id, season_number, api_key = API_KEY):
-    r = s.get(f'https://api.themoviedb.org/3/tv/{tv_show_id}/season/{season_number}?api_key={api_key}')
-    r_json = json.loads(r.text)
-    df = pd.DataFrame(columns=['ID', 'Name', 'Air Date', 'Vote AVG.', 'Vote Count'])
-    for episode in r_json['episodes']:
-        df.loc[len(df.index)] = [episode['id'], episode['name'], episode['air_date'], episode['vote_average'], episode['vote_count']]
-    return df
+
         
     
 #search_keywords(API_KEY, 'sex education')
-# get_tv_series_overview(API_KEY, 456)
+print(get_tv_series_overview(456))
 # get_season_overview(API_KEY, 456, 2)
 #get_series_data(81356)
 #test_api_key()
-get_tv_series_watch_providers(456)
+#get_tv_series_watch_providers(456)
     
