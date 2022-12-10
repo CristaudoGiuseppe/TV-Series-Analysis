@@ -104,6 +104,7 @@ def get_heatmap_avg_vote(seasons):
     df.index.name = 'Episode'
     i = 1
     for s in seasons:
+        print(s)
         df[f'Season {i}'] = s['Vote AVG.']
         i += 1
     
@@ -111,6 +112,7 @@ def get_heatmap_avg_vote(seasons):
 
 # Return a DataFrame containing for each episode of each season the vote count
 def get_heatmap_vote_count(seasons):
+    print(seasons)
     df = pd.DataFrame()
     df.index.name = 'Episode'
     i = 1
@@ -139,21 +141,19 @@ def get_series_data(tv_series_id, api_key = API_KEY):
         
         # For every season get a Dataframe which contains the information about each episode
         temp = get_season_overview(tv_series_id, season['season_number'])
-        
         for index, row in temp.iterrows():
             # To display the chart with every season I need a DataFrame containing a column with the season information
-            
             df_avg_chart.loc[len(df_avg_chart.index)] = [season['name'], index + 1, row['Vote AVG.'], row['Vote Count']]
-            
-            episodes_total_time.append(episodes_total_time[-1] + episode_rt)
-            votes.append(row['Vote AVG.'])
+    
+            episodes_total_time.append(episodes_total_time[-1] + episode_rt) # for every episode we add a episode run time
+            votes.append(row['Vote AVG.']) # same for the avarage vote series
         seasons.append(temp)
     
     df_total_time = pd.DataFrame({'time': episodes_total_time, 'episodes':range(0, len(episodes_total_time))})
     df_total_time.index.name = 'Episode'
     
     df_heatmap_vote = get_heatmap_avg_vote(seasons)
-    print(df_heatmap_vote)
+    #print(df_heatmap_vote)
     
     """
     df_total_vote = pd.DataFrame({'Vote': votes})
@@ -221,9 +221,9 @@ def get_series_data(tv_series_id, api_key = API_KEY):
         
     
 #search_keywords(API_KEY, 'sex education')
-print(get_tv_series_overview(456))
+#print(get_tv_series_overview(456))
 # get_season_overview(API_KEY, 456, 2)
-#get_series_data(81356)
+get_series_data(456)
 #test_api_key()
 #get_tv_series_watch_providers(456)
     
