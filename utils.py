@@ -51,39 +51,33 @@ def get_chart(data, chart_type):
             .add_selection(hover)
         )
     elif chart_type == 1:
-        hover = alt.selection_single(
-        fields=["episode"],
-        nearest=True,
-        on="mouseover",
-        empty="none",
-    )
-
-    lines = (
-        alt.Chart(data, title="Predict Next Episode Vote Based On previous Votes")
-        .mark_line()
-        .encode(
-            x="episode",
-            y="Vote",
-            color="Type",
-            strokeDash="Type",
+        
+        lines = (
+            alt.Chart(data, title="Predict Next Episode Vote Based On previous Votes")
+            .mark_line()
+            .encode(
+                x="episode",
+                y="Vote",
+                color="Type",
+                strokeDash="Type",
+            )
         )
-    )
 
-    points = lines.transform_filter(hover).mark_circle(size=60)
+        points = lines.transform_filter(hover).mark_circle(size=60)
 
-    tooltips = (
-        alt.Chart(data)
-        .mark_rule()
-        .encode(
-            x="episode",
-            y="Vote",
-            opacity=alt.condition(hover, alt.value(0.3), alt.value(0)),
-            tooltip=[
-                alt.Tooltip("episode", title="Episode Number"),
-                alt.Tooltip("Vote", title="Vote"),
-            ],
+        tooltips = (
+            alt.Chart(data)
+            .mark_rule()
+            .encode(
+                x="episode",
+                y="Vote",
+                opacity=alt.condition(hover, alt.value(0.3), alt.value(0)),
+                tooltip=[
+                    alt.Tooltip("episode", title="Episode Number"),
+                    alt.Tooltip("Vote", title="Vote"),
+                ],
+            )
+            .add_selection(hover)
         )
-        .add_selection(hover)
-    )
         
     return (lines + points + tooltips).interactive()

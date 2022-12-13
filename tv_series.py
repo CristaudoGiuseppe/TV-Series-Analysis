@@ -231,6 +231,3 @@ def get_series_data(tv_series_id, api_key = API_KEY):
     df_prediction = get_series_regression(votes)
     
     return df_heatmap_vote, df_heatmap_vote_count, df_avg_chart, df_total_time, df_prediction, df_full_info
-    
-    
-get_series_data(456)
