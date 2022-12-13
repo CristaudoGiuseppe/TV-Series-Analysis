@@ -31,32 +31,54 @@ def analyze_tv_series(search):
         with st.expander("Show more info"):
             st.caption(f"Vote avarage: {minor_information_dict.get('vote_avg')}")
             st.caption(f"Vote count: {minor_information_dict.get('vote_count')}")
-            st.caption(f"In production?: {minor_information_dict.get('in_production')}") # magare fare verde se è in produzione rosso in caso contrario
-            # inserire info su watch provider
+            if minor_information_dict.get('in_production'):
+                st.write('IN PRODUCTION', color='green')
+            else:
+                st.write('IN PRODUCTION', color='red')
+            
+            df_watch_provider = tv_series.get_tv_series_watch_providers(df['ID'][0])
+            # Create a list of options from the dataframe column
+            options = df_watch_provider["Country"].tolist()
+            # Create the selectbox widget
+            selected_option = st.selectbox("Choose a country", options)
+            selected_row = df_watch_provider.loc[df_watch_provider['Country'] == selected_option].values
+            print(selected_row)
+            st.caption(f"Provider name: {selected_row[0][1]}")
+            st.image(selected_row[0][2], width = 100)
+
+                        
     
     minutes_needed = minor_information_dict.get('number_of_seasons') * minor_information_dict.get('number_of_episodes') * minor_information_dict.get('episode_rt')
-    st.caption(f'Total watch time needed: {minutes_needed} minutes or {minutes_needed/60} hours')
-    # formattare correttamente
-    
+    st.caption(f'Total watch time needed: {minutes_needed} minutes or {minutes_needed/60:.2f} hours')
+        
+    df_avg_vote, df_vote_count, df_avg_chart, df_total_time, df_prediction, df_full_info = tv_series.get_series_data(df['ID'][0])
+
     st.subheader(f"{df['Name'][0]} overview")
     st.dataframe(df_id)
-    # show more information con tutti gli episodi
+        
+    st.download_button('Downalod full episodes data', df_full_info.to_csv(), 'text/csv')
     
-    df_avg_vote, df_vote_count, df_avg_chart, df_total_time, df_prediction = tv_series.get_series_data(df['ID'][0])
     c1, c2 = st.columns(2)
     with c1:
         st.subheader('Avarage Vote Heatmap')
         fig, ax = plt.subplots()
         sns.color_palette("YlOrBr", as_cmap=True)
         sns.heatmap(df_avg_vote, ax=ax, annot = True, fmt=".1f", linewidth=.5)
+        x_cell_size = ax.get_xaxis().get_tick_padding()
+        y_cell_size = ax.get_yaxis().get_tick_padding()
+        font_size = min(x_cell_size, y_cell_size)
+        fig, ax = plt.subplots()
+        sns.heatmap(df_avg_vote, ax=ax, annot = True, fmt=".1f", linewidth=.5, annot_kws={'size': font_size})
+
         st.write(fig)
     with c2:
+    
         st.subheader('Vote Count Heatmap')
         fig, ax = plt.subplots()
         sns.color_palette("YlOrBr", as_cmap=True)
-        sns.heatmap(df_vote_count, ax=ax, annot = True, linewidth=.5)
+        sns.heatmap(df_vote_count, ax=ax, annot = True, linewidth=.5, annot_kws={'size': font_size})
         st.write(fig)
-    
+        
     all_seasons = df_avg_chart.season.unique()
     seasons = st.multiselect("Choose season to visualize", all_seasons, all_seasons[:3])
     

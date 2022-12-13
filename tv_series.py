@@ -91,12 +91,14 @@ def get_tv_series_overview(tv_series_id, api_key = API_KEY):
 # Get watch providers information about a TV Series given a tv_series_id
 def get_tv_series_watch_providers(tv_series_id, api_key = API_KEY):
     r = json.loads(s.get(f'https://api.themoviedb.org/3/tv/{tv_series_id}/watch/providers?api_key={api_key}').text)
-    
     df = pd.DataFrame(columns=['Country', 'Provider Name', 'Provider Logo'])
     
     for res in r['results']:
         # {'link': 'https://www.themoviedb.org/tv/456-the-simpsons/watch?locale=ZA', 'flatrate': [{'logo_path': '/7rwgEs15tFwyR9NPQ5vpzxTj19Q.jpg', 'provider_id': 337, 'provider_name': 'Disney Plus', 'display_priority': 28}]}
-        df.loc[len(df.index)] = [res, r['results'][res]['flatrate'][0]['provider_name'], f"https://image.tmdb.org/t/p/w440_and_h660_face/{r['results'][res]['flatrate'][0]['logo_path']}"]
+        try:
+            df.loc[len(df.index)] = [res, r['results'][res]['flatrate'][0]['provider_name'], f"https://image.tmdb.org/t/p/w440_and_h660_face/{r['results'][res]['flatrate'][0]['logo_path']}"]
+        except:
+            continue
     
     return df
 
@@ -204,6 +206,7 @@ def get_series_data(tv_series_id, api_key = API_KEY):
     r = json.loads(s.get(f'https://api.themoviedb.org/3/tv/{tv_series_id}?api_key={api_key}').text)    
     # Create a DataFrame which contains for each row the season number, the episode number, the avarage vote and the vote count
     df_avg_chart = pd.DataFrame(columns=['season', 'episode', 'avg', 'count'])
+    df_full_info = pd.DataFrame(columns=['ID', 'Name', 'Air Date', 'Vote AVG.', 'Vote Count'])
     
     for season in r['seasons']:
         if 'specials'.upper() in season['name'].upper():
@@ -211,6 +214,7 @@ def get_series_data(tv_series_id, api_key = API_KEY):
         
         # For every season get a Dataframe which contains the information about each episode
         temp = get_season_overview(tv_series_id, season['season_number'])
+        df_full_info = pd.concat([df_full_info, temp])
         for index, row in temp.iterrows():
             # To display the chart with every season I need a DataFrame containing a column with the season information
             df_avg_chart.loc[len(df_avg_chart.index)] = [season['name'], index + 1, row['Vote AVG.'], row['Vote Count']]
@@ -226,5 +230,7 @@ def get_series_data(tv_series_id, api_key = API_KEY):
     df_heatmap_vote_count = get_heatmap(seasons, avg = False)
     df_prediction = get_series_regression(votes)
     
-    return df_heatmap_vote, df_heatmap_vote_count, df_avg_chart, df_total_time, df_prediction
+    return df_heatmap_vote, df_heatmap_vote_count, df_avg_chart, df_total_time, df_prediction, df_full_info
     
+    
+get_series_data(456)
