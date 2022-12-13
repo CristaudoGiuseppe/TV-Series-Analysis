@@ -4,6 +4,20 @@ from sklearn.tree import DecisionTreeRegressor
 from sklearn.ensemble import GradientBoostingRegressor
 import matplotlib.pyplot as plt
 
+"""
+    _summary_
+    This python code defines several functions that interact with the The Movie Database (TMDb) API to retrieve information 
+    about TV series. The code uses the requests library to make HTTP requests to the TMDb API, and the json library to parse 
+    the API responses. The code also uses the pandas library to store and manipulate data, and the numpy and sklearn libraries 
+    to perform machine learning tasks.
+
+    The code first loads an API key from a settings.json file and creates an HTTP session using the requests library.
+    It then defines several functions that use the TMDb API to search for TV series by keyword, retrieve information about
+    episode runtimes, and get more detailed information about TV series. The code also includes functions for performing 
+    machine learning tasks, such as training decision tree and gradient boosting regression models. 
+    The code also includes several utility functions for plotting and visualizing data.
+"""
+
 
 with open('settings.json') as settings:
   settings_json = json.load(settings)
@@ -35,7 +49,7 @@ def search_keywords(keyword, api_key = API_KEY):
     df = df.sort_values(by=['Popularity'], ascending=False)
     df = df.reset_index()
     
-    return df[0]
+    return df
 
 # Get the informaion on how long episodes are long given a TV Series ID
 def get_episode_runtime(tv_series_id, api_key = API_KEY):

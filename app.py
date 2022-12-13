@@ -5,6 +5,8 @@ import matplotlib.pyplot as plt
 import pandas as pd, numpy as np
 from sklearn.linear_model import LinearRegression
 
+# fare che si avviall'invio senza cliccare
+
 st.set_page_config(
     page_title = "TV Series Analysis",
     page_icon = "tv"
@@ -12,26 +14,27 @@ st.set_page_config(
 
 def analyze_tv_series(search):
     df = tv_series.search_keywords(keyword = search)
-    vote_avg, vote_count, episode_rt, in_production, number_of_episodes, number_of_seasons, df_id = tv_series.get_tv_series_overview(id = df['ID'][0])
+    
+    minor_information_dict, df_id = tv_series.get_tv_series_overview(df['ID'][0])
     st.header(df['Name'][0])
     c1, c2 = st.columns(2)
     with c1:
         st.image(df['Poster'][0])
         st.caption(f"Popularity: {df['Popularity'][0]}")
-        st.caption(f"Number of season(s): {number_of_seasons}")
-        st.caption(f"Number of episodes: {number_of_episodes}")
-        st.caption(f"Episode run time: {episode_rt}")
+        st.caption(f"Number of season(s): {minor_information_dict.get('number_of_seasons')}")
+        st.caption(f"Number of episodes: {minor_information_dict.get('number_of_episodes')}")
+        st.caption(f"Episode run time: {minor_information_dict.get('episode_rt')}")
     with c2:
         st.subheader('Overview')
         st.markdown(df['Overview'][0])
         
         with st.expander("Show more info"):
-            st.caption(f"Vote avarage: {vote_avg}")
-            st.caption(f"Vote count: {vote_count}")
-            st.caption(f"In production?: {in_production}") # magare fare verde se è in produzione rosso in caso contrario
+            st.caption(f"Vote avarage: {minor_information_dict.get('vote_avg')}")
+            st.caption(f"Vote count: {minor_information_dict.get('vote_count')}")
+            st.caption(f"In production?: {minor_information_dict.get('in_production')}") # magare fare verde se è in produzione rosso in caso contrario
             # inserire info su watch provider
     
-    minutes_needed = number_of_seasons * number_of_episodes * episode_rt
+    minutes_needed = minor_information_dict.get('number_of_seasons') * minor_information_dict.get('number_of_episodes') * minor_information_dict.get('episode_rt')
     st.caption(f'Total watch time needed: {minutes_needed} minutes or {minutes_needed/60} hours')
     # formattare correttamente
     
