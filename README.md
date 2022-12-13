@@ -10,7 +10,8 @@ To use this app, you need to have the following libraries installed:
 * pandas
 * numpy
 
-### How to use the app
+## How to use the app:
+
 To start the app, run the following command:
 
 ```console
@@ -18,7 +19,8 @@ To start the app, run the following command:
 ```
 This will start the app in your web browser. You can then search for a TV series by entering the name in the search bar and clicking the "Search" button. This will display the TV series information and allow you to analyze it.
 
-### What the app does
+## What the app does:
+
 When you search for a TV series, the app will retrieve the following information about the TV series:
 
 * Poster image
@@ -41,14 +43,15 @@ You can also download the full episode data for the TV series as a CSV file.
 
 This python script uses the requests and json libraries to interact with the The Movie Database (TMDb) API to retrieve information about TV series. The script uses the pandas library to store and manipulate data, and the numpy and sklearn libraries to perform machine learning tasks.
 
-### Dependencies
+## Dependencies:
 * requests
 * json
 * pandas
 * sklearn
 * numpy
 
-### Usage
+## Usage:
+
 Before running the script, make sure to add your TMDb API key to the settings.json file in the following format:
 
 ```json
@@ -65,7 +68,8 @@ To run the script, use the following command:
 
 The script defines several functions that can be used to search for TV series by keyword, retrieve information about episode runtimes, get detailed information about a TV series, and perform machine learning tasks.
 
-### Funcionts
+## Funcionts:
+
 * **test_api_key** - tests whether the API key is valid by checking the API response for the specified movie
 * **search_keywords** - searches for TV series by keyword and returns the most popular result
 * **get_episode_runtime** - gets the information on how long episodes of a given TV series are
