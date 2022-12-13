@@ -98,29 +98,85 @@ def get_season_overview(tv_series_id, season_number, api_key = API_KEY):
     
     return df
 
-# Return a DataFrame containing for each episode of each season the avarage vote
-def get_heatmap_avg_vote(seasons):
+# Return a DataFrame containing for each episode of each season the avarage vote or the vote count based on the avg value
+def get_heatmap(seasons, avg = True):
     df = pd.DataFrame()
     df.index.name = 'Episode'
     i = 1
     for s in seasons:
-        print(s)
-        df[f'Season {i}'] = s['Vote AVG.']
+        if avg:
+            temp = pd.DataFrame({f'Season {i}': s['Vote AVG.']}) 
+        else: 
+            temp = pd.DataFrame({f'Season {i}': s['Vote Count']}) 
+            
+        df = pd.concat([df, temp], axis = 1)
         i += 1
-    
     return df
 
-# Return a DataFrame containing for each episode of each season the vote count
-def get_heatmap_vote_count(seasons):
-    print(seasons)
-    df = pd.DataFrame()
-    df.index.name = 'Episode'
-    i = 1
-    for s in seasons:
-        df[f'Season {i}'] = s['Vote Count']
-        i += 1
+# Given the vote series (as a time series) return a DataFrame containing the predicted values using different methods
+# The model outputs a prediction for the next time step, given only the previous observation.
+def get_series_regression(votes):
     
-    return df
+    df_total_vote = pd.DataFrame({'Vote': votes})
+    df_total_vote.index.name = 'Episode'
+    df_total_vote_copy = df_total_vote.copy()
+    df_total_vote_copy['y'] = df_total_vote['Vote'].shift(-1)
+    
+    
+    train = df_total_vote_copy[:-int(len(df_total_vote_copy)/2)]
+    test = df_total_vote_copy[-int(len(df_total_vote_copy)/2):]
+    test = test.drop(test.tail(1).index) # Drop last row
+    test = test.copy()
+    test['baseline_pred'] = test['Vote']
+    
+    X_train = train['Vote'].values.reshape(-1,1)
+    y_train = train['y'].values.reshape(-1,1)
+    X_test = test['Vote'].values.reshape(-1,1)
+    # Initialize the model
+    dt_reg = DecisionTreeRegressor(random_state=42)
+    # Fit the model
+    dt_reg.fit(X=X_train, y=y_train)
+    # Make predictions
+    dt_pred = dt_reg.predict(X_test)
+    # Assign predictions to a new column in test
+    test['dt_pred'] = dt_pred
+    gbr = GradientBoostingRegressor(random_state=42)
+    gbr.fit(X_train, y=y_train.ravel())
+    gbr_pred = gbr.predict(X_test)
+    test['gbr_pred'] = gbr_pred
+    
+    def mape(y_true, y_pred):
+        return round(np.mean(np.abs((y_true - y_pred) / y_true)) * 100, 2)
+    
+    baseline_mape = mape(test['y'], test['baseline_pred'])
+    dt_mape = mape(test['y'], test['dt_pred'])
+    gbr_mape = mape(test['Vote'], test['gbr_pred'])
+    
+    """
+    # Generate bar plot
+    fig, ax = plt.subplots(figsize=(7, 5))
+    x = ['Baseline', 'Decision Tree', 'Gradient Boosting']
+    y = [baseline_mape, dt_mape, gbr_mape]
+    ax.bar(x, y, width=0.4)
+    ax.set_xlabel('Regressor models')
+    ax.set_ylabel('MAPE (%)')
+    ax.set_ylim(0, 0.3)
+    for index, value in enumerate(y):
+        plt.text(x=index, y=value + 0.02, s=str(value), ha='center')
+    
+    plt.tight_layout()
+    """
+    df_prediction = pd.DataFrame(columns=['Type', 'Vote', 'episode'])
+    for index, row in test.iterrows():
+        df_prediction.loc[len(df_prediction.index)] = ['Vote', row['Vote'], index]
+        df_prediction.loc[len(df_prediction.index)] = ['dt_pred', row['dt_pred'], index]
+        df_prediction.loc[len(df_prediction.index)] = ['gbr_pred', row['gbr_pred'], index]
+    for index, row in train.iterrows():
+        df_prediction.loc[len(df_prediction.index)] = ['Vote', row['Vote'], index]
+        
+    return df_prediction
+    
+    
     
 # Get all the data needed to display in the streamlit app
 def get_series_data(tv_series_id, api_key = API_KEY):
@@ -152,78 +208,9 @@ def get_series_data(tv_series_id, api_key = API_KEY):
     df_total_time = pd.DataFrame({'time': episodes_total_time, 'episodes':range(0, len(episodes_total_time))})
     df_total_time.index.name = 'Episode'
     
-    df_heatmap_vote = get_heatmap_avg_vote(seasons)
-    #print(df_heatmap_vote)
+    df_heatmap_vote = get_heatmap(seasons)
+    df_heatmap_vote_count = get_heatmap(seasons, avg = False)
+    df_prediction = get_series_regression(votes)
     
-    """
-    df_total_vote = pd.DataFrame({'Vote': votes})
-    df_total_vote.index.name = 'Episode'
-    df_total_vote_copy = df_total_vote.copy()
-    df_total_vote_copy['y'] = df_total_vote['Vote'].shift(-1)
-    train = df_total_vote_copy[:-int(len(df_total_vote_copy)/2)]
-    test = df_total_vote_copy[-int(len(df_total_vote_copy)/2):]
-    test = test.drop(test.tail(1).index) # Drop last row
-    test = test.copy()
-    test['baseline_pred'] = test['Vote']
-    
-    X_train = train['Vote'].values.reshape(-1,1)
-    y_train = train['y'].values.reshape(-1,1)
-    X_test = test['Vote'].values.reshape(-1,1)
-    # Initialize the model
-    dt_reg = DecisionTreeRegressor(random_state=42)
-    # Fit the model
-    dt_reg.fit(X=X_train, y=y_train)
-    # Make predictions
-    dt_pred = dt_reg.predict(X_test)
-    # Assign predictions to a new column in test
-    test['dt_pred'] = dt_pred
-    gbr = GradientBoostingRegressor(random_state=42)
-    gbr.fit(X_train, y=y_train.ravel())
-    gbr_pred = gbr.predict(X_test)
-    test['gbr_pred'] = gbr_pred
-    
-    def mape(y_true, y_pred):
-        return round(np.mean(np.abs((y_true - y_pred) / y_true)) * 100, 2)
-    
-    
-    baseline_mape = mape(test['y'], test['baseline_pred'])
-    dt_mape = mape(test['y'], test['dt_pred'])
-    gbr_mape = mape(test['Vote'], test['gbr_pred'])
-    # Generate bar plot
-    fig, ax = plt.subplots(figsize=(7, 5))
-    x = ['Baseline', 'Decision Tree', 'Gradient Boosting']
-    y = [baseline_mape, dt_mape, gbr_mape]
-    ax.bar(x, y, width=0.4)
-    ax.set_xlabel('Regressor models')
-    ax.set_ylabel('MAPE (%)')
-    ax.set_ylim(0, 0.3)
-    for index, value in enumerate(y):
-        plt.text(x=index, y=value + 0.02, s=str(value), ha='center')
-    
-    plt.tight_layout()
-    test['episodes'] = range(0, len(test))
-    #print(test)
-    df_prediction = pd.DataFrame(columns=['Type', 'Vote', 'episode'])
-    for index, row in test.iterrows():
-        df_prediction.loc[len(df_prediction.index)] = ['Vote', row['Vote'], index]
-        df_prediction.loc[len(df_prediction.index)] = ['dt_pred', row['dt_pred'], index]
-        df_prediction.loc[len(df_prediction.index)] = ['gbr_pred', row['gbr_pred'], index]
-    for index, row in train.iterrows():
-        df_prediction.loc[len(df_prediction.index)] = ['Vote', row['Vote'], index]
-    #print(df_prediction)    
-    
-    df_heatmap_vote = get_heatmap_avg_vote(seasons)
-    df_heatmap_vote_count = get_heatmap_vote_count(seasons)
     return df_heatmap_vote, df_heatmap_vote_count, df_avg_chart, df_total_time, df_prediction
-    """
-
-
-        
-    
-#search_keywords(API_KEY, 'sex education')
-#print(get_tv_series_overview(456))
-# get_season_overview(API_KEY, 456, 2)
-get_series_data(456)
-#test_api_key()
-#get_tv_series_watch_providers(456)
     
